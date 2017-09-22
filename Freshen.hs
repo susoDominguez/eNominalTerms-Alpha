@@ -12,7 +12,7 @@ import qualified Data.Char as C
 {-Wrappers-}
 {-Function that genenerates new freshness constraints from old ones-}
 
-frshGen ::S.Set Atm -> FreshAtms
+frshGen ::Set Atm -> FreshAtms
 frshGen atms = (atms, testSize atms (newNames atms))
 
 

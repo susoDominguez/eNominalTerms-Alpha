@@ -49,7 +49,7 @@ match _ _ _ (_:xs) =  Nothing
 
 
 --postponed constraints--to check before starting
-isVarTrm:: Trm->Bool
+isVarTrm:: Trm -> Bool
 isVarTrm (VarTrm{}) =True
 isVarTrm _ =False
 
@@ -74,3 +74,29 @@ solveMatch  prob
 solveMatch':: FreshAtms->  Prob -> Maybe Sol
 solveMatch' atms
     = match atms  M.empty []
+
+
+{-Function Cap returns a finite set of terms equivalent to another term t
+ everywhere except below some position p_i in t where atoms from an atmSet have
+  been inserted instead-}
+cap::  Set Trm  -> Trm -> Set Trm
+cap S.empty t               = t --returns the whole term when no atoms in the set
+cap atms atm@(AtmTrm a)     = atms `S.union` atm 
+cap atms (VarTrm asb prm x) =  let asb' = M.map (cap atms) asb 
+                               in S.insert (VarTrm asb' prm x) atms
+cap atms (AbsTrm a t)       = let ts  = cap atms t
+                                  abs = S.map (anAbsTrm a) ts
+                              in  S.union abs atms
+cap atms (AppTrm f t)       = let ts = cap atms t
+                                  fs = S.map (anAppTrm f) ts
+                              in  S.union fs atms
+cap atms (TplTrm ts)        = let ts' = L.map (cap atms) ts
+                              in 
+
+
+
+
+
+
+
+

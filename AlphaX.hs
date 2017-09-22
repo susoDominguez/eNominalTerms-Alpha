@@ -6,6 +6,7 @@ import SetofSets
 import Asb
 import qualified Data.List as L
 import qualified Data.Map as M
+import Data.Set (Set)
 import qualified Data.Set as S
 import qualified Control.Monad as C
 import qualified Control.Applicative as A
@@ -16,7 +17,7 @@ import Data.Maybe (isJust)
 {- Derivability-}
 
 --auxiliar fn for both frsh and eq
-auxFn:: Var -> Atm -> Constr Trm -> S.Set (Maybe Ctx)
+auxFn:: Var -> Atm -> Constr Trm -> Set (Maybe Ctx)
 auxFn v a c
      | hasEmptyD nf = nf
      | hasNothingD nf = returnD (Just (aFC a v))
@@ -32,7 +33,7 @@ diffSet asb p asb' p' x =
 
 
 --freshness of an atm w/respect to a trmX
-frsh:: Prob  -> S.Set (Maybe Ctx)
+frsh:: Prob  -> Set (Maybe Ctx)
 frsh []
   = returnD (Just S.empty)
 frsh ((F (AtmTrm a) (AtmTrm b)):xs)|a==b

@@ -19,8 +19,7 @@ module TrmX
         , aTplTrm
         , aTrmCtx
         , aFC
-         )
-where 
+         ) where 
 
 ----------------PREAMBLE
 

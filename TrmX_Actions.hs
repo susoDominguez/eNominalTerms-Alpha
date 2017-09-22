@@ -12,8 +12,14 @@ module TrmX_Actions
         , varsCtx
         , atmsTrmCtx
         , varsTrmCtx
-          )
-where
+        , atmsVSub
+        , varsVSub
+        , atmsTrm
+        , varsTrm
+        , atmsRl
+        , varsRl
+        , isGround
+          ) where
 
                   {- Preamble -}
 --containers
@@ -154,6 +160,14 @@ atmsTrm (AbsTrm a t) = S.insert a (atmsTrm t)
 atmsTrm (VarTrm asb p _) = allAtmsAsb asb `S.union` atmsPrm p
 atmsTrm (AppTrm f t) = atmsTrm t
 atmsTrm (TplTrm xs) = S.unions $ map atmsTrm xs
+
+{-| Returns the set of UNABSTRACTED atom symbols from a given Nominal term. -}
+atmsTrmF :: Trm -> Set Atm
+atmsTrmF (AtmTrm a) = S.singleton a
+atmsTrmF (AbsTrm a t) = atmsTrmF t
+atmsTrmF (VarTrm asb p _) = allAtmsAsb asb `S.union` atmsPrm p
+atmsTrmF (AppTrm f t) = atmsTrm t
+atmsTrmF (TplTrm xs) = S.unions $ map atmsTrm xs
 
 {-| Returns the set of variable symbols from a given Nominal term. -}
 varsTrm :: Trm -> Set Var
