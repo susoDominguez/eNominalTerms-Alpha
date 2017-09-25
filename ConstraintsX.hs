@@ -1,62 +1,73 @@
-module ConstraintsX where
+module ConstraintsX(
+   ConstrX(..)
+  ,anEConstr, aFConstr, isEqConstr
+  , Prob, ProbCtx
+  , atmsProb, varsProb
+  , Sol, Sols
+  , ctx2Constr) where
 
 import TrmX
+import TrmX_Actions
 import qualified Data.List as L
 import qualified Data.Map as M
+import Data.Set (Set)
 import qualified Data.Set as S
 --import qualified Data.Maybe as M
 --import qualified Control.Applicative as A
 
---Data Structures
+--Data Structure
+data   ConstrX a   = Eq  {getL::a, getR::a} | F {getL::a, getR::a}
 
---A constraint class
-class (Functor a) => Constraint a where
-     getL:: a -> Trm
-     getR:: a -> Trm
-     isEqConstr?:: a -> Bool
+anEConstr :: Trm -> Trm  -> ConstrX Trm
+anEConstr  = Eq 
 
---constructors
-instance Constraint Constr where
-   getL (_ s _) = s
-   getR (_ _ t) = t
-   isEqConstr? (E _ _) = True
-   isEqConstr? _       = False
-   fmap f (E s t) = E (f s) (f t)
-   fmap f (F a t) = F   a   (f t)
+aFConstr :: Trm -> Trm -> ConstrX Trm
+aFConstr  = F
 
+isEqConstr:: ConstrX Trm -> Bool
+isEqConstr (Eq _ _) = True
+isEqConstr _ = False
 
---data structures
-data Constr = E Trm Trm | F Trm Trm
-
-anEConstr :: Trm -> Trm  -> Constr
-anEConstr  = E 
-
-aFConstr :: Trm -> Trm -> Constr
-aFConstr  = F 
+instance Eq a => Eq (ConstrX a) where
+   (Eq s t) == (Eq s' t') =  (s==s') && (t==t')
+   (F  a s) == (F  a' s') =  (a==a') && (s==s')
+   (Eq s t) /= (Eq s' t') =  not $ (Eq s t) == (Eq s' t')
+   (F  a s) /= (F  a' s') =  not $ (F  a s) == (F  a' s')
+   (Eq _ _) /= (F _ _)    =  True
 
 
 --A list of Constraints
-type Prob = [Constr]--and then turn it into a list for input?
-type ProbCtx = (Ctx,Prob)
+type Prob = [ConstrX Trm]--and then turn it into a list for input?
+type ProbCtx = (Ctxs,Prob)
 
---Vars and Atms in Prob
+--atms in a constraint
 atmsConstr c =   (atmsTrm $ getR c) `S.union` (atmsTrm $ getL c)
 
+--atoms in a problem
 atmsProb :: Prob -> Set Atm
-atmsProb (c:prob)
-  = atmsConstr c `S.union`  atmsProb prob
+atmsProb []        = S.empty
+atmsProb (c:prob)  = atmsConstr c `S.union`  atmsProb prob
+
+--Var symbols in a constraint
+varsConstr c =   (varsTrm $ getR c) `S.union` (varsTrm $ getL c)
+
+--Var symbols in a problem
+varsProb :: Prob -> Set Var
+varsProb []        = S.empty
+varsProb (c:prob)  = varsConstr c `S.union`  varsProb prob
     
---common solution to all eq problems
-type Sol= (Ctxs, Vsub)
+--solution  to a matching problem
+type Sol  = (Ctxs, VSub)
+type Sols = Set Sol
 
 
 -- Convert Fresh context into list of constraints
 ctx2Constr :: Ctx -> Prob
-ctx2Constr = map (\(a,t)-> (aFConstr (AtmTrm a) (VarTrm Mp.empty [] t))) . S.toList
+ctx2Constr = map (\(a,t)-> (aFConstr (anAtmTrm a) (aVarTrm M.empty [] t))) . S.toList
 
 
 --single join of solutions
-solUnion ::  Sol ->  Sol ->  Sol
-solUnion (_,fc) (sb',fc') =  (sb',  fc `S.union` fc')
+-- solUnion ::  Sol ->  Sol ->  Sol
+-- solUnion (_,fc) (sb',fc') =  (sb',  fc `S.union` fc')
 
 
