@@ -17,8 +17,8 @@ import qualified Control.Applicative as A
 --matching. 2 options, returning frshAtms or not
 match :: FreshAtms -> VSub -> Prob -> Prob -> Maybe Sol
 match as sb fc [] 
-  =  let (as',prob)=vsb2Constr as sb fc 
-         ctxs= solveAlpha prob
+  =  let (as',prob) = vsb2Constr as sb fc
+         ctxs       = frsh prob
      in if S.null ctxs then Nothing else Just (sb,ctxs)
 match as sb fc (E (AtmTrm a) (AtmTrm b):xs) | a == b
   =  match as sb fc xs
@@ -39,7 +39,7 @@ match as sb fc (E (VarTrm asb p x) (VarTrm asb' p' y):xs) | x==y
                               (S.toList $ S.union (atmActDom asb p) (atmActDom asb' p') ))
 match as sb fc (E s@(VarTrm asb  p x) t:xs)| asb == M.empty
   = if  x `S.member` varsTrm t
-      then Nothing 
+      then Nothing
         else  match as' sb' fc prob
             where  sb'= M.insert x (prmTrmApp (prmInv p) t) sb
                    (as',prob)= vsb2Constr as sb' xs
@@ -57,14 +57,14 @@ isVarTrm _ =False
 solveDiffSet:: FreshAtms -> VSub -> S.Set (Maybe Ctx) -> Ctxs -> Ctxs
 solveDiffSet atms sb s c
              = let fatms = frshGen (S.unions [fst atms, atmsVSub sb,atmsCtxs c])
-                   resolve = foldrD S.union (returnD S.empty) . 
+                   resolve = foldrD S.union (returnD S.empty) .
                               fnD (solveAlpha . snd . vsb2Constr fatms sb . ctx2Constr) . toD
                in S.union c (resolve s)
 
 
 --main function to solve matching. local version for freshAtms and global
 
-      
+
 -- matching local fresh variables
 solveMatch::   Prob -> Maybe Sol
 solveMatch  prob
@@ -81,21 +81,20 @@ solveMatch' atms
   been inserted instead-}
 cap::  Set Trm  -> Trm -> Set Trm
 cap S.empty t               = t --returns the whole term when no atoms in the set
-cap atms atm@(AtmTrm a)     = atms `S.union` atm 
-cap atms (VarTrm asb prm x) =  let asb' = M.map (cap atms) asb 
-                               in S.insert (VarTrm asb' prm x) atms
+cap atms atm@(AtmTrm a)     = atms `S.union` atm
+cap atms (VarTrm asb prm x) = let asb' = L.map (\(a,xs) -> L.map (\x -> (a,x)) xs)  $ M.toList asb -- list of lists with same atom in the domain
+                                  asbs = L.map M.fromList $ sequence asb' --product of list of lists; cast each to Map
+                                  varSet = S.fromList $ L.map (\sb -> aVarTrm sb prm x) asbs --set of varTrms for each asub mapping
+                              in  S.union varSet atms
 cap atms (AbsTrm a t)       = let ts  = cap atms t
-                                  abs = S.map (anAbsTrm a) ts
+                                  abSet = S.map (anAbsTrm a) ts
                               in  S.union abs atms
 cap atms (AppTrm f t)       = let ts = cap atms t
-                                  fs = S.map (anAppTrm f) ts
+                                  fSet = S.map (anAppTrm f) ts
                               in  S.union fs atms
-cap atms (TplTrm ts)        = let ts' = L.map (cap atms) ts
-                              in 
-
-
-
-
+cap atms (TplTrm ts)        = let ts' = sequence $ L.map (S.toList . (cap atms)) ts
+                                  tsSet = S.fromList $ L.map aTplTrm ts'
+                              in  S.union tsSet atms
 
 
 
