@@ -16,13 +16,13 @@ import Data.Maybe (isJust)
 
 {- Derivability-}
 
---auxiliar fn for both frsh and eq
+--auxiliar fn for both frsh and eq; removes inconsistencies (=Nothing)
 auxFn:: Var -> Atm -> Constr Trm -> Set (Maybe Ctx)
 auxFn v a c
-     | hasEmptyD nf = nf
-     | hasNothingD nf = returnD (Just (aFC a v))
-     | otherwise = S.union nf (returnD (Just (aFC a v))) 
-   where nf=eq [c]  []
+     | hasEmptyD nf = nf --if solvable by empty frshnss ctx, do not add disjunct a#x
+     | hasNothingD nf = returnD (Just (aFC a v))--if inconsistent, add disjunct a#x
+     | otherwise = S.union nf (returnD (Just (aFC a v))) --otherwise add both
+   where nf = eq (c:[])
 
 --iteration of auxFn on problem
 freshFn a asb p x  = 
@@ -33,7 +33,7 @@ diffSet asb p asb' p' x =
 
 
 --freshness of an atm w/respect to a trmX
-frsh:: Prob  -> Set (Maybe Ctx)
+frsh:: Prob -> Set (Maybe Ctx)
 frsh []
   = returnD (Just S.empty)
 frsh ((F (AtmTrm a) (AtmTrm b)):xs)|a==b
@@ -54,7 +54,7 @@ frsh ((F atm@(AtmTrm a) v@(VarTrm asb p x)):xs)
            freshFn'= freshFn atm asb p x . S.toList
 
 -- alpha equality--first phase alpha, second phase frshness
-eq :: Prob -> Prob -> S.Set (Maybe Ctx)
+eq :: Prob -> Prob -> Set (Maybe Ctx)
 eq  acc [] 
   = frsh acc
 eq  acc (f@(F a t):xs)  
@@ -71,11 +71,9 @@ eq  acc ((E (TplTrm s) (TplTrm  t)):xs) | length s == length t
   = eq acc ((map (\(si,ti)-> anEConstr si ti)  (zip s t))++xs)
 eq  acc ((E (VarTrm asb p x) (VarTrm asb' p' y)):xs) | x==y
   = sqUnions ( (eq acc xs) : diffSet' atmSet)
-    where diffSet' = diffSet  asb p asb' p' x . S.toList 
-          atmSet  = S.union (atmActDom asb p) (atmActDom asb' p')
+     where atmSet  = S.union (atmActDom asb p) (atmActDom asb' p')
+           diffSet' = diffSet  asb p asb' p' x . S.toList 
 eq _ (_:xs) = returnD Nothing
-
--- function !$ keeps the size constant since it evaluates the construction of lists
 
 --function to solve derivability for a list of constraints.empty set is failure
 solveAlpha:: Prob ->  Ctxs

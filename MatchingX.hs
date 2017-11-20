@@ -9,43 +9,74 @@ import SetofSets
 import qualified Data.List as L
 import qualified Data.Map as M
 import qualified Data.Set as S
---import qualified Data.Maybe as MB
 import qualified Control.Monad as C
 import qualified Control.Applicative as A
 
 
---matching. 2 options, returning frshAtms or not
-match :: FreshAtms -> VSub -> Prob -> Prob -> Maybe Sol
-match as sb fc [] 
+---AUXILIARY FUNCTIONS----
+
+{-Function psi is applied to handle constraints of the form φˆπ·X ?≈ φ′ˆπ′·X, that is, deals with the premise of rule (≈αX) (see Def.2.4 in the conference paper) in set not ation.-}
+psi :: Trm -> Trm -> Prob -> Set Atm -> Set Prob
+psi _ _ p S.empty = p
+psi v1@(VarTrm sb prm x) v2@(VarTrm sb' prm' x') p atms = --x==x' is tested bf calling psi
+  let atm = S.elemAt 0 atms
+      atms' = S.deleteAt 0 atms
+      eqC = anEConstr (atmActAtm asb p atm) (atmActAtm asb' p' atm)
+      fcC = aFConstr atm x
+  in psi v1 v2 (eqC:p) atms' S.union  psi v1 v2 (fcC:p) atms'
+
+
+{-Function Cap returns a finite set of terms equivalent to another term t
+  everywhere except below some position p_i in t where atoms from an atmSet have
+  been inserted instead. enhanced to add subterm \pi.X to set of terms when \phi^\pi.X  is encountered.-}
+cap::  Set Trm -> Trm -> Set Trm
+cap S.empty t               = t --returns the whole term when no atoms in the set
+cap atms atm@(AtmTrm a)     = atms `S.union` atm
+cap atms (VarTrm asb prm x) =
+  let asb' = L.map (\(a,xs) -> L.map (\x -> (a,x)) xs)  $ M.toList asb -- list of lists sharing same atom in 1st pos of pair (Atm, Trm)
+      asbs = L.map M.fromList $ sequence asb' --product of list of lists; cast each to Map
+      varSet = S.fromList $ L.map (\sb -> aVarTrm sb prm x) asbs --set of varTrms for each asub mapping
+  in  S.insert (aVarTrm M.empty prm x) $ S.union varSet atms
+cap atms (AbsTrm a t)       = let ts  = cap atms t
+                                  abSet = S.map (anAbsTrm a) ts
+                              in  S.union abs atms
+cap atms (AppTrm f t)       = let ts = cap atms t
+                                  fSet = S.map (anAppTrm f) ts
+                              in  S.union fs atms
+cap atms (TplTrm ts)        = let ts' = sequence $ L.map (S.toList . (cap atms)) ts
+                                  tsSet = S.fromList $ L.map aTplTrm ts'
+                              in  S.union tsSet atms
+
+
+--Matching function following a 2-phase strategy, first equality constraints then freshness constraints. The matching function takes as arguments a set of RHS vars from the given problem, a pair of a freshness context and a set of new atoms with respect to the problem, a variable substitution, a freshness constraint problem and an equality constriant problem. It returns a set of matching solutions of the form (Ctxs,Vsub) where Ctxs may be empty and thus indicating such pair fails to match the given problem.
+--Observe that there is no rule for Vars with distinct name, it is subsumed by the variable rule because of the enhancenment done to function Cap.
+match :: Set Var -> (Ctx,Set Atm) -> VSub -> Prob -> Prob -> Sols
+match vRHS (ctx,nwAs) vsb fcP (fc@(F _ _ ):xs)
+  = match vRHS (ctx,nwAs) vsb (fc:fcP) xs --add to frshness constraint problem
+match vRHS (ctx,nwAs) vsb fcP [] --starts 2nd phase of algorithm
   =  let (as',prob) = vsb2Constr as sb fc
          ctxs       = frsh prob
-     in if S.null ctxs then Nothing else Just (sb,ctxs)
-match as sb fc (E (AtmTrm a) (AtmTrm b):xs) | a == b
-  =  match as sb fc xs
-match as sb fc (E (AbsTrm a s) (AbsTrm b t):xs) | a==b
-  =  match as sb fc  (anEConstr s t:xs)
-match as sb fc (E (AbsTrm a s) (AbsTrm b t):xs)
-  = match as sb (aFConstr (AtmTrm a) t:fc)  (anEConstr s (prmTrmApp [(a,b)] t):xs)
-match as sb fc (E (AppTrm f s) (AppTrm g t):xs) | f==g
-  =  match as sb fc (anEConstr s t:xs)
-match as sb fc  (E (TplTrm s) (TplTrm  t):xs) | length s == length t
-  = match as sb fc (zipWith anEConstr s t ++ xs)
-match as sb fc (E (VarTrm asb p x) (VarTrm asb' p' y):xs) | x==y
-  = case match as sb fc xs of
-         Nothing -> Nothing
-         Just (vsb, ctxs) -> let fcs= solveDiffSet as vsb diffSet ctxs
-                             in if S.null fcs then Nothing else Just (vsb,fcs)
-    where diffSet = sqUnions (map (\a-> auxFn x a (anEConstr (atmActAtm asb p  a) (atmActAtm asb' p' a)))
-                              (S.toList $ S.union (atmActDom asb p) (atmActDom asb' p') ))
-match as sb fc (E s@(VarTrm asb  p x) t:xs)| asb == M.empty
-  = if  x `S.member` varsTrm t
-      then Nothing
-        else  match as' sb' fc prob
+     in S.insert (ctxs,vsb)
+match vRHS (ctx,nwAs) vsb fcP (E s t:xs) | s == t --subsumes atmTrm equality rule
+  =  match vRHS (ctx,nwAs) vsb fcP xs
+match vRHS (ctx,nwAs) vsb fcP (E (AbsTrm a s) (AbsTrm b t):xs)
+  | a == b = match vRHS (ctx,nwAs) vsb fcP (anEConstr s t:xs)
+  | otherwise = let fcP'= (aFConstr (AtmTrm a) t:fcP)
+                    eqP = (anEConstr s (prmTrmApp [(a,b)] t):xs)
+                in match vRHS (ctx,nwAs) vsb  fcP' eqP 
+match vRHS (ctx,nwAs) vsb fcP (E (AppTrm f s) (AppTrm g t):xs) | f == g
+  = match vRHS (ctx,nwAs) vsb fcP (anEConstr s t:xs)
+match vRHS (ctx,nwAs) vsb fcP  (E (TplTrm s) (TplTrm  t):xs) | length s == length t
+  = match vRHS (ctx,nwAs) vsb fcP (zipWith anEConstr s t ++ xs)
+match vRHS (ctx,nwAs) vsb fcP (E v1@(VarTrm asb p x) v2@(VarTrm asb' p' y):xs) | x == y
+  = fnD (match vRHS (ctx,nwAs) vsb fcP) diffSet
+        where  atmSet  = S.union (atmActDom asb p) (atmActDom asb' p')
+               diffSet = psi v1 v2 atmSet xs
+match vRHS (ctx,nwAs) vsb fcP (E s@(VarTrm asb p x) t:xs) | (not $ x `S.member` vRHS)
+  =  
             where  sb'= M.insert x (prmTrmApp (prmInv p) t) sb
                    (as',prob)= vsb2Constr as sb' xs
-match as sb fc (c@(E t s):xs)| isVarTrm t
-  = match as sb fc (xs++[c])
-match _ _ _ (_:xs) =  Nothing
+match _ _ _ _ (c:_) = S.empty
 
 
 --postponed constraints--to check before starting
@@ -62,40 +93,13 @@ solveDiffSet atms sb s c
                in S.union c (resolve s)
 
 
---main function to solve matching. local version for freshAtms and global
-
-
--- matching local fresh variables
-solveMatch::   Prob -> Maybe Sol
-solveMatch  prob
-    = match ( atmsProb prob ,S.empty) M.empty [] prob
-
--- matching global fresh variables
-solveMatch':: FreshAtms->  Prob -> Maybe Sol
-solveMatch' atms
-    = match atms  M.empty []
-
-
-{-Function Cap returns a finite set of terms equivalent to another term t
- everywhere except below some position p_i in t where atoms from an atmSet have
-  been inserted instead-}
-cap::  Set Trm  -> Trm -> Set Trm
-cap S.empty t               = t --returns the whole term when no atoms in the set
-cap atms atm@(AtmTrm a)     = atms `S.union` atm
-cap atms (VarTrm asb prm x) = let asb' = L.map (\(a,xs) -> L.map (\x -> (a,x)) xs)  $ M.toList asb -- list of lists with same atom in the domain
-                                  asbs = L.map M.fromList $ sequence asb' --product of list of lists; cast each to Map
-                                  varSet = S.fromList $ L.map (\sb -> aVarTrm sb prm x) asbs --set of varTrms for each asub mapping
-                              in  S.union varSet atms
-cap atms (AbsTrm a t)       = let ts  = cap atms t
-                                  abSet = S.map (anAbsTrm a) ts
-                              in  S.union abs atms
-cap atms (AppTrm f t)       = let ts = cap atms t
-                                  fSet = S.map (anAppTrm f) ts
-                              in  S.union fs atms
-cap atms (TplTrm ts)        = let ts' = sequence $ L.map (S.toList . (cap atms)) ts
-                                  tsSet = S.fromList $ L.map aTplTrm ts'
-                              in  S.union tsSet atms
-
-
-
-
+-- matching a given problem-in-context. Initial Sols to the matching problem must be filtered to discard potential pairs of form  (Set empty, Vsub), denoting failure.
+--An initial set of new atoms with respect to the context and the problem has been added to deal with capture-avoidance substitution of abstraction terms.
+--Aditionally, the given freshness context has been added to the problem as freshness constraints, therefore initially the freshness context passed to the function is empty, to be filled with primitive constraints of new atoms during the reduction of the matching problem.
+solveMatch :: Ctx ->  Prob -> Sols
+solveMatch ctx prob
+    = let xs = varsRHSProb prob
+          nwAtms = newAtms (atmsProbCtx ctx prob)
+          ctxProb = ctx2Constr ctx
+          result =  match xs (S.empty, nwAtms) M.empty ctxProb prob        
+      in filterD (not . S.null . fst) result --preserve Sol where Ctxs is not empty

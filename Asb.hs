@@ -3,8 +3,10 @@ module Asb where
 
 import TrmX
 import ConstraintsX
+import TrmX_Actions
 import qualified Data.List as L
 import qualified Data.Map as M
+import Data.Set(Set)
 import qualified Data.Set as S
 import Control.Arrow
 
@@ -13,13 +15,10 @@ import Control.Arrow
 
 {- Composition of atm substitutions. The freshness context is used to derive fresh names
  when needed. -} 
-aSbComp::Ctx -> Asb -> Asb -> Asb
+aSbComp::(Ctx,Set Atm) -> Asb -> Asb -> ((Ctx,Set Atm),  Asb)
 aSbComp fc sb1 sb2 =
-  let (frsh', sb1')  = M.mapAccum (\acc v -> aSbApp acc sb2 v) frsh sb1
-      ks = M.keys sb1'
-      (ctxs, trms)= unzip $ M.elems sb1'
-      step3 k v = aSbFiltr . M.fromList $  zip k v
-  in (frsh' ,S.unions ctxs  , step3 ks trms `M.union`  sb2) --union left-biased so it works
+  let (fc', sb1')  = M.mapAccum (\acc v -> aSbApp acc sb2 v) fc sb1
+  in (fc', sb1' `M.union`  sb2) --union left-biased so it works
        
 
 {-| Given an  atom 'a' and atom substitution \phi, it returns a-substitution \phi' where
@@ -32,16 +31,17 @@ aSbAtmApp:: Asb -> Atm -> Trm
 aSbAtmApp sb a =  M.findWithDefault (anAtmTrm a) a sb
 
 
---application of atms subst to terms with generation of new names derived fromo given context
-aSbApp:: Ctx -> Asb -> Trm  -> Trm
-aSbApp _ sb  (AtmTrm a) =   aSbAtmApp sb a
-aSbApp fc sb2 (VarTrm sb1 p x) =   let asb = aSbComp fc sb1 sb2
-                                   in  aVarTrm asb p x
+{-| Application of atm subst to terms with generation of new names derived fromo given context.-}
+aSbApp:: (Ctx, Set Atm) -> Asb -> Trm  -> ((Ctx, Set Atm), Trm)
+aSbApp fc asb  (AtmTrm a) =   (fc,aSbAtmApp asb a)
+aSbApp fc asb' (VarTrm asb p x)
+  = let (fc',asb1) = aSbComp fc asb asb'
+    in  (fc', aVarTrm asb1 p x)
 aSbApp fc sb abs@(AbsTrm a t)
-   | a `M.member` asb =   aSbApp fc (aSbDel a sb) abs t--delete mapping [a-> Trm] from sb
-   | otherwise =   AbsTrm newAtm trm
-      where newAtm = frshen --TODO follow new definition
-            trm = prmTrmApp [(newAtm, a)] t
-aSbApp fc sb (AppTrm f t) = aSbApp fc sb t
-aSbApp fc sb (TplTrm ts) = TplTrm ts'
-   where ts' = L.map (aSbApp fc sb) ts
+  =  (fc', AbsTrm nwAtm trm)
+     where (nwAtm, fc') = freshen fc (varsTrm t)
+           trm = prmTrmApp [(nwAtm, a)] t
+aSbApp fc sb (AppTrm f t) = let (fc', trm) =  aSbApp fc sb t
+                            in (fc', anAppTrm f trm)
+aSbApp fc sb (TplTrm ts) = (fc', aTplTrm ts')
+   where (fc', ts') = L.mapAccumL (\acc t-> aSbApp acc sb t) fc ts

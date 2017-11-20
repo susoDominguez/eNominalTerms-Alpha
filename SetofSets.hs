@@ -21,7 +21,7 @@ fnD ::(Ord a, Eq a, Ord b, Eq b) => (a ->  b) -> S.Set a -> S.Set b
 fnD fn  = S.map fn -- fn must be defined concretely to b applied to sets
 
 --filter out those sets s_i s.t. p(s_i)=False
-filterD::(Ord a,Eq a) => (a->Bool) -> S.Set a -> S.Set a
+filterD ::(Ord a,Eq a) => (a -> Bool) -> S.Set a -> S.Set a
 filterD p s = S.fromList [x | x <- S.elems s, p x]
 
 --folder for set of sets  w initial element and function
@@ -38,7 +38,7 @@ showSets fn s = "{ " ++ L.intercalate ",\n " (S.elems $ fnD fn s ) ++ " }"
 --must find out if partial application (when Nothing) avoids solving to normal form next arg.
 sqUnion:: S.Set (Maybe Ctx) -> S.Set (Maybe Ctx) -> S.Set (Maybe Ctx)
 sqUnion d1 d2
-   | hasNothingD d1 = d1
+   | hasNothingD d1 = d1 --failure
    | otherwise = S.fromList [S.union A.<$> ctx1 A.<*> ctx2 | ctx1 <- S.elems d1, ctx2 <- S.elems d2]
 
 --strict left fold where empty is not allowed
@@ -58,9 +58,9 @@ rmInc =filterD M.isJust
 --convert to set of  Ctxs
 toD:: S.Set (Maybe Ctx) -> Ctxs
 toD s
-    | S.null s'=  S.empty
-    | otherwise=  fnD M.fromJust s'
-    where s'=rmInc s
+    | S.null s' =  S.empty
+    | otherwise =  fnD M.fromJust s'
+    where s' = rmInc s
 
 --convert to set of MAybe Ctxs
 toMCtxs ctxs = if S.null ctxs then Nothing else Just ctxs

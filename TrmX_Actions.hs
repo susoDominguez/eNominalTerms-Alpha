@@ -16,6 +16,8 @@ module TrmX_Actions
         , varsVSub
         , atmsTrm
         , varsTrm
+        , newAtms
+        , freshen
         , atmsRl
         , varsRl
         , isGround
@@ -176,6 +178,21 @@ varsTrm (AbsTrm _ t) = varsTrm t
 varsTrm (VarTrm asb _ v) = varsAsb asb `S.union` S.singleton v
 varsTrm (AppTrm f t) = varsTrm t
 varsTrm (TplTrm xs) = S.unions $ map varsTrm xs
+
+{-| returns a set of (fixed) new atoms with respect to another given set of atoms; the fixed set of potential new atoms ranges from a to z and from a0 to z9. -} 
+newAtms :: Set Atm -> Set Atm
+newAtms as =
+  let atms = S.fromList $ [ (atm:show num) | atm <- ['a'..'z'], num <- [0..9]]
+             ++ [(atm:[])| atm <- ['a'..'z']]
+  in  S.difference atms as
+
+{- Given a freshness context Ctx, a set of (new) atoms Set Atm and a set of variables xs, it returns a pair (a, (Ctx',Set Atm')) where Ctx' has a#X for each X in xs and Set Atm' is equalt to Set Atm except that it does not contain a. -}
+freshen :: (Ctx, Set Atm) -> Set Var -> (Atm,(Ctx,Set Atm))
+freshen (ctx, nwAs) xs = (atm, (ctx `S.union` ctx', S.deleteAt 0 nwAs))
+    where atm = S.elemAt 0 nwAs
+          ctx' = ctxGen (S.singleton atm) xs
+
+--------rewriting framework
 
 {-| Returns the set of atoms existing in a nominal rewrite rule. -}
 atmsRl (fc,l,r) = atmsTrmCtx (fc, TplTrm [l,r])

@@ -1,7 +1,7 @@
 module ConstraintsX(
    ConstrX(..)
   ,anEConstr, aFConstr, isEqConstr
-  , Prob, ProbCtx
+  , Prob
   , atmsProb, varsProb
   , Sol, Sols
   , ctx2Constr) where
@@ -37,37 +37,38 @@ instance Eq a => Eq (ConstrX a) where
 
 
 --A list of Constraints
-type Prob = [ConstrX Trm]--and then turn it into a list for input?
-type ProbCtx = (Ctxs,Prob)
+type Prob = [ConstrX Trm]
 
 --atms in a constraint
-atmsConstr c =   (atmsTrm $ getR c) `S.union` (atmsTrm $ getL c)
+atmsConstr c =  (atmsTrm $ getL c) `S.union` (atmsTrm $ getR c)
 
 --atoms in a problem
 atmsProb :: Prob -> Set Atm
 atmsProb []        = S.empty
 atmsProb (c:prob)  = atmsConstr c `S.union`  atmsProb prob
 
+--atoms in a problem-in-context
+atmsProbCtx :: Ctx -> Prob -> Set Atm
+atmsProbCtx ctx p = (atmsCtx ctx) `S.union` (atmsProb p)
+
 --Var symbols in a constraint
-varsConstr c =   (varsTrm $ getR c) `S.union` (varsTrm $ getL c)
+varsConstr c = (varsTrm $ getL c) `S.union` (varsTrm $ getR c)
 
 --Var symbols in a problem
 varsProb :: Prob -> Set Var
 varsProb []        = S.empty
 varsProb (c:prob)  = varsConstr c `S.union`  varsProb prob
+
+--Var symbols in RHS of a  problem
+varsRHSProb :: Prob -> Set Var
+varsRHSProb []        = S.empty
+varsRHSProb (c:prob)  = (varsTrm $ getR c) `S.union`  varsProb prob
     
 --solution  to a matching problem
 type Sol  = (Ctxs, VSub)
 type Sols = Set Sol
 
-
--- Convert Fresh context into list of constraints
+-- Convert freshness context into list of freshness constraints
 ctx2Constr :: Ctx -> Prob
 ctx2Constr = map (\(a,t)-> (aFConstr (anAtmTrm a) (aVarTrm M.empty [] t))) . S.toList
-
-
---single join of solutions
--- solUnion ::  Sol ->  Sol ->  Sol
--- solUnion (_,fc) (sb',fc') =  (sb',  fc `S.union` fc')
-
 
