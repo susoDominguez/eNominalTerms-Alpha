@@ -1,10 +1,4 @@
-module ConstraintsX(
-   ConstrX(..)
-  ,anEConstr, aFConstr, isEqConstr
-  , Prob
-  , atmsProb, varsProb
-  , Sol, Sols
-  , ctx2Constr) where
+module ConstraintsX where
 
 import TrmX
 import TrmX_Actions

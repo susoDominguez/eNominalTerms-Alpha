@@ -45,9 +45,6 @@ sqUnion d1 d2
 sqUnions:: [S.Set (Maybe Ctx)]-> S.Set (Maybe Ctx)
 sqUnions = L.foldl1' sqUnion
 
---atoms in sets of sets
-atmsCtxs = foldrD (S.union . atmsCtx) S.empty 
-
 --showCtxs
 showCtxs = showSets showCtx
 

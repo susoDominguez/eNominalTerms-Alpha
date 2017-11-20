@@ -2,6 +2,7 @@ module TrmX_Actions
         ( prmComp
         , prmInv
         , prmTrmApp
+        , prmAtmApp
         , prmSupp
         , prmDs
         , aSbDom

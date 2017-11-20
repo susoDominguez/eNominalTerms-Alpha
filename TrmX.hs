@@ -19,6 +19,7 @@ module TrmX
         , aTplTrm
         , aTrmCtx
         , aFC
+        , showCtx
          ) where 
 
 ----------------PREAMBLE

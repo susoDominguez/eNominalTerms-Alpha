@@ -45,3 +45,7 @@ aSbApp fc sb (AppTrm f t) = let (fc', trm) =  aSbApp fc sb t
                             in (fc', anAppTrm f trm)
 aSbApp fc sb (TplTrm ts) = (fc', aTplTrm ts')
    where (fc', ts') = L.mapAccumL (\acc t-> aSbApp acc sb t) fc ts
+
+{- application of permutation and atom substitution to an Atm. -}
+atmActAtm :: Asb -> Prm -> Atm -> Trm
+atmActAtm as prm = aSbAtmApp as . prmAtmApp prm

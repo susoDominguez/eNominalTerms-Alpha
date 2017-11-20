@@ -1,6 +1,7 @@
 module AlphaX where
 
 import TrmX
+import TrmX_Actions
 import ConstraintsX
 import SetofSets
 import Asb
@@ -17,19 +18,19 @@ import Data.Maybe (isJust)
 {- Derivability-}
 
 --auxiliar fn for both frsh and eq; removes inconsistencies (=Nothing)
-auxFn:: Var -> Atm -> Constr Trm -> Set (Maybe Ctx)
+auxFn:: Var -> Atm -> ConstrX Trm -> Set (Maybe Ctx)
 auxFn v a c
      | hasEmptyD nf = nf --if solvable by empty frshnss ctx, do not add disjunct a#x
      | hasNothingD nf = returnD (Just (aFC a v))--if inconsistent, add disjunct a#x
      | otherwise = S.union nf (returnD (Just (aFC a v))) --otherwise add both
-   where nf = eq (c:[])
+   where nf = eq (c:[]) []
 
---iteration of auxFn on problem
-freshFn a asb p x  = 
-   L.map (\b-> auxFn x (prmAtmApp (prmInv p) b) (aFConstr a (aSbAtmApp asb b)))
+--iteration of auxFn applied to a set of atoms
+freshFn atm asb p x  = 
+   L.map (\c-> auxFn x (prmAtmApp (prmInv p) c) (aFConstr atm (aSbAtmApp asb c)))
 
 diffSet asb p asb' p' x =
-   L.map (\a-> auxFn x a (anEConstr (atmActAtm asb p a) (atmActAtm asb' p' a)))
+   L.map (\c-> auxFn x c (anEConstr (atmActAtm asb p c) (atmActAtm asb' p' c)))
 
 
 --freshness of an atm w/respect to a trmX
@@ -59,17 +60,17 @@ eq  acc []
   = frsh acc
 eq  acc (f@(F a t):xs)  
   = eq  (f:acc)  xs  
-eq   acc ((E (AtmTrm a) (AtmTrm b)):xs) | a == b
+eq   acc ((Eq (AtmTrm a) (AtmTrm b)):xs) | a == b
   = eq acc xs 
-eq acc ((E (AbsTrm a s) (AbsTrm b t)):xs) | a==b
-  =  eq  acc ((E s t):xs)
-eq  acc ((E (AbsTrm a s) (AbsTrm b t)):xs) 
-  = eq ((F (anAtmTrm b) s):acc) ((E (prmTrmApp [(a,b)] s) t):xs)
-eq  acc  ((E (AppTrm f s) (AppTrm g t)):xs) | f==g
-  =  eq acc ((E s t):xs)
-eq  acc ((E (TplTrm s) (TplTrm  t)):xs) | length s == length t
+eq acc ((Eq (AbsTrm a s) (AbsTrm b t)):xs) | a==b
+  =  eq  acc ((Eq s t):xs)
+eq  acc ((Eq (AbsTrm a s) (AbsTrm b t)):xs) 
+  = eq ((F (anAtmTrm b) s):acc) ((Eq (prmTrmApp [(a,b)] s) t):xs)
+eq  acc  ((Eq (AppTrm f s) (AppTrm g t)):xs) | f==g
+  =  eq acc ((Eq s t):xs)
+eq  acc ((Eq (TplTrm s) (TplTrm  t)):xs) | length s == length t
   = eq acc ((map (\(si,ti)-> anEConstr si ti)  (zip s t))++xs)
-eq  acc ((E (VarTrm asb p x) (VarTrm asb' p' y)):xs) | x==y
+eq  acc ((Eq (VarTrm asb p x) (VarTrm asb' p' y)):xs) | x==y
   = sqUnions ( (eq acc xs) : diffSet' atmSet)
      where atmSet  = S.union (atmActDom asb p) (atmActDom asb' p')
            diffSet' = diffSet  asb p asb' p' x . S.toList 
