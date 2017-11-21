@@ -1,4 +1,5 @@
-module AlphaX where
+module AlphaX where (solveAlpha
+                     , isAlpha)
 
 import TrmX
 import TrmX_Actions
@@ -52,7 +53,7 @@ frsh ((F a (TplTrm t)):xs)
 frsh ((F atm@(AtmTrm a) v@(VarTrm asb p x)):xs)
   =  sqUnions ((frsh xs) : freshFn' atmSet)
      where atmSet = S.singleton a `S.union` aSbDom asb 
-           freshFn'= freshFn atm asb p x . S.toList
+           freshFn'= freshFn atm asb p x . toListD
 
 -- alpha equality--first phase alpha, second phase frshness
 eq :: Prob -> Prob -> Set (Maybe Ctx)
@@ -73,12 +74,12 @@ eq  acc ((Eq (TplTrm s) (TplTrm  t)):xs) | length s == length t
 eq  acc ((Eq (VarTrm asb p x) (VarTrm asb' p' y)):xs) | x==y
   = sqUnions ( (eq acc xs) : diffSet' atmSet)
      where atmSet  = S.union (atmActDom asb p) (atmActDom asb' p')
-           diffSet' = diffSet  asb p asb' p' x . S.toList 
+           diffSet' = diffSet  asb p asb' p' x . toListD 
 eq _ (_:xs) = returnD Nothing
 
---function to solve derivability for a list of constraints.empty set is failure
+--function to solve derivability for a list of constraints. empty set is failure
 solveAlpha:: Prob ->  Ctxs
-solveAlpha p = toD $  eq [] p
+solveAlpha = toD . (eq [])
 
 
 --are trms alpha= by means of a (possibly empty) fc?
