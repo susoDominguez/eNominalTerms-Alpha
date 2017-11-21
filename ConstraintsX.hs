@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 module ConstraintsX where
 
 import TrmX
@@ -23,16 +24,26 @@ isEqConstr (Eq _ _) = True
 isEqConstr _ = False
 
 instance Ord a => Ord (ConstrX a) where
-   (Eq s t) `compare` (Eq s' t') =  if ((s `compare` s') == EQ) then (t `compare` t') else EQ
-   (F  a s) `compare` (F  a' s') =  if ((a `compare` a') == EQ) then (s `compare` s') else EQ
+   (Eq s t) `compare` (Eq s' t') =  let result = (s `compare` s')
+                                    in if (result == EQ) then (t `compare` t') else result
+   (F  a s) `compare` (F  a' s') =  let result = (a `compare` a')
+                                    in if (result == EQ) then (s `compare` s') else result
+   (Eq _ _) `compare` (F _ _) = LT
+   (F _ _) `compare` (Eq _ _) = GT
 
 instance Eq a => Eq (ConstrX a) where
    (Eq s t) == (Eq s' t') =  (s==s') && (t==t')
    (F  a s) == (F  a' s') =  (a==a') && (s==s')
+   (Eq _ _) == (F _ _) = False
+   (F _ _) == (Eq _ _) = False
    (Eq s t) /= (Eq s' t') =  not $ (Eq s t) == (Eq s' t')
    (F  a s) /= (F  a' s') =  not $ (F  a s) == (F  a' s')
    (Eq _ _) /= (F _ _)    =  True
+   (F _ _) /= (Eq _ _)    =  True
 
+instance Show a => Show (ConstrX a) where
+   show (Eq s t) = show s ++ " = " ++ show t
+   show (F a t) = show a ++ " # " ++ show t 
 
 --A list of Constraints
 type Prob = [ConstrX Trm]

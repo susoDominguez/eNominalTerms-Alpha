@@ -2,6 +2,7 @@ module TrmX_Actions
         ( prmComp
         , prmInv
         , prmTrmApp
+        , prmAsbApp
         , prmAtmApp
         , prmSupp
         , prmDs
@@ -60,7 +61,7 @@ prmAtmApp ((a,b): xs) n
 {-Applies a permutation to set of atom substituion mappings,
  both to the set in the image and the set in the domain. -}
 prmAsbApp :: Prm -> Asb -> Asb 
-prmAsbApp p asb = M.map (prmTrmApp p) $ M.mapKeys (prmAtmApp p) asb
+prmAsbApp p asb = aSbFiltr $ M.map (prmTrmApp p) $ M.mapKeys (prmAtmApp p) asb
 
 {-| Applies a permutation to a Nominal term, resulting in the permuted Nominal
    term. -}

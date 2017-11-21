@@ -1,4 +1,4 @@
-module MatchingX (solveMatch)  where
+module MatchingX where --(solveMatch)  where
 
 import TrmX
 import TrmX_Actions
