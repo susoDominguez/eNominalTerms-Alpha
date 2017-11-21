@@ -22,6 +22,10 @@ isEqConstr:: ConstrX Trm -> Bool
 isEqConstr (Eq _ _) = True
 isEqConstr _ = False
 
+instance Ord a => Ord (ConstrX a) where
+   (Eq s t) `compare` (Eq s' t') =  if ((s `compare` s') == EQ) then (t `compare` t') else EQ
+   (F  a s) `compare` (F  a' s') =  if ((a `compare` a') == EQ) then (s `compare` s') else EQ
+
 instance Eq a => Eq (ConstrX a) where
    (Eq s t) == (Eq s' t') =  (s==s') && (t==t')
    (F  a s) == (F  a' s') =  (a==a') && (s==s')

@@ -9,6 +9,7 @@ module TrmX
         , Fun
         , Ctx
         , Ctxs
+        , CtxD
         , Asb
         , VSub
         , TrmCtx
@@ -42,6 +43,7 @@ type Var  = String --type of variable symbol
 type Fun  = String --type of term formers
 type Ctx  = Set (Atm,Var) --type of freshness context
 type Ctxs = Set Ctx --type of collection of contexts
+type CtxD = (Ctx, Set Atm) -- apair of a frhness context and a set of atoms; used to generate primitive constraints using new atoms from the set of atoms
 
 --type aliases for permutations and substitutions
 type Prm    = [(Atm, Atm)] --type of permutations: list of atom swappings

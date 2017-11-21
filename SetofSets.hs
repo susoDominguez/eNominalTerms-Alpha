@@ -63,13 +63,11 @@ toD s
     | otherwise =  fnD M.fromJust s'
     where s' = rmInc s
 
---convert to set of MAybe Ctxs
-toMCtxs ctxs = if S.null ctxs then Nothing else returnD $ Just ctxs
-
--- should have size 1 by default bc of applicative function sqUnion
+-- A singleton of empty freshness context
 hasEmptyD:: S.Set (Maybe Ctx) -> Bool
 hasEmptyD s = S.size s == 1 && S.member (Just S.empty) s
-              
+
+--A singleton of Nothing
 hasNothingD:: S.Set (Maybe Ctx) -> Bool
 hasNothingD s = S.size s == 1 && S.member Nothing s
 

@@ -188,7 +188,7 @@ newAtms as =
   in  S.difference atms as
 
 {- Given a freshness context Ctx, a set of (new) atoms Set Atm and a set of variables xs, it returns a pair (a, (Ctx',Set Atm')) where Ctx' has a#X for each X in xs and Set Atm' is equalt to Set Atm except that it does not contain a. -}
-freshen :: (Ctx, Set Atm) -> Set Var -> (Atm,(Ctx,Set Atm))
+freshen :: (Ctx, Set Atm) -> Set Var -> (Atm,CtxD)
 freshen (ctx, nwAs) xs = (atm, (ctx `S.union` ctx', S.deleteAt 0 nwAs))
     where atm = S.elemAt 0 nwAs
           ctx' = ctxGen (S.singleton atm) xs

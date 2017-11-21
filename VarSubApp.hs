@@ -19,12 +19,12 @@ vsbSearch :: Var -> VSub -> Maybe Trm
 vsbSearch  = M.lookup
 
 {-| action of Var Subs on a Term. A freshness context and a set of new atmos is given to the function to deal with atom substitution applications. -}
-vsubApp :: (Ctx, Set Atm) -> VSub -> Trm -> ((Ctx, Set Atm), Trm)
+vsubApp :: CtxD -> VSub -> Trm -> (CtxD, Trm)
 vsubApp fc vsb t@(VarTrm asb p x)
   = case vsbSearch x vsb of
      Nothing -> (fc,t)
      Just s  -> atmActionsTrm fc' asb' p s
-       where (fc', asb') = M.mapAccum (\acc m-> vsubApp acc vsb m) fc asb
+       where (fc', asb') = vsubAppAsb fc vsb asb
 vsubApp fc vsb (AppTrm f t)
   = (fc', anAppTrm f trm)
    where (fc', trm) = vsubApp fc vsb t
@@ -36,9 +36,11 @@ vsubApp fc vsb (AbsTrm a t)
     where (fc', trm) = vsubApp fc vsb t 
 vsubApp fc _ t = (fc,t)
 
+--v substitution applied to atm substitutions
+vsubAppAsb ctx vsb asb = M.mapAccum (\acc elem -> vsubApp acc vsb elem) ctx asb
 
 -- idempotent substitution composition: see baader & snyder
-vsubComp :: (Ctx,Set Atm) -> VSub -> VSub -> ((Ctx, Set Atm), VSub)
+vsubComp :: CtxD -> VSub -> VSub -> (CtxD, VSub)
 vsubComp fc sb1 sb2
  = (fc' , sb1' `M.union`  sb2)
     where (fc', sb1') = M.mapAccum (\acc t -> vsubApp acc sb2 t) fc sb1
@@ -48,7 +50,7 @@ vsubComp fc sb1 sb2
 atmActionsTrm fc asb p = aSbApp fc asb . prmTrmApp p
 
 --vsubApp for ConstrX data structure. Adapted for matching, so only applies to RHS term
-vsubCnApp:: (Ctx,Set Atm) -> VSub -> ConstrX Trm -> ((Ctx,Set Atm), ConstrX Trm)
+vsubCnApp:: CtxD -> VSub -> ConstrX Trm -> (CtxD, ConstrX Trm)
 vsubCnApp fc vsb c
      | isEqConstr c = (fc' $ getL c, Eq (trm $ getL c) (getR c))
      | otherwise = (fc' $ getR c, F (getL c) (trm $ getR c))

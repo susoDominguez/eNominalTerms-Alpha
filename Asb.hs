@@ -15,7 +15,7 @@ import Control.Arrow
 
 {- Composition of atm substitutions. The freshness context is used to derive fresh names
  when needed. -} 
-aSbComp::(Ctx,Set Atm) -> Asb -> Asb -> ((Ctx,Set Atm),  Asb)
+aSbComp::CtxD -> Asb -> Asb -> (CtxD,  Asb)
 aSbComp fc sb1 sb2 =
   let (fc', sb1')  = M.mapAccum (\acc v -> aSbApp acc sb2 v) fc sb1
   in (fc', sb1' `M.union`  sb2) --union left-biased so it works
@@ -32,7 +32,7 @@ aSbAtmApp sb a =  M.findWithDefault (anAtmTrm a) a sb
 
 
 {-| Application of atm subst to terms with generation of new names derived fromo given context.-}
-aSbApp:: (Ctx, Set Atm) -> Asb -> Trm  -> ((Ctx, Set Atm), Trm)
+aSbApp:: CtxD -> Asb -> Trm  -> (CtxD, Trm)
 aSbApp fc asb  (AtmTrm a) =   (fc,aSbAtmApp asb a)
 aSbApp fc asb' (VarTrm asb p x)
   = let (fc',asb1) = aSbComp fc asb asb'

@@ -1,5 +1,6 @@
-module AlphaX where (solveAlpha
-                     , isAlpha)
+module AlphaX  (solveAlpha
+               , isAlpha
+               ) where
 
 import TrmX
 import TrmX_Actions
