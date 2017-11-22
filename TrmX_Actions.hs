@@ -1,29 +1,4 @@
-module TrmX_Actions
-        ( prmComp
-        , prmInv
-        , prmTrmApp
-        , prmAsbApp
-        , prmAtmApp
-        , prmSupp
-        , prmDs
-        , aSbDom
-        , aSbImg
-        , atmActDom
-        , ctxGen
-        , atmsCtx
-        , varsCtx
-        , atmsTrmCtx
-        , varsTrmCtx
-        , atmsVSub
-        , varsVSub
-        , atmsTrm
-        , varsTrm
-        , newAtms
-        , freshen
-        , atmsRl
-        , varsRl
-        , isGround
-          ) where
+module TrmX_Actions where
 
                   {- Preamble -}
 --containers

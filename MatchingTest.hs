@@ -23,6 +23,14 @@ main = hspec $ do
 
       context "when applied to an atom and a variable term" $ do
         it "Returns a set of problems" $ do
-          psi (AtmTrm "a") (VarTrm (M.fromList [("c", AtmTrm "a"),("b", (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"))]) [("a","b")] "X")
-           `shouldBe`
-             (S.fromList [ [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"),  F (AtmTrm "a") (AtmTrm "a")] , [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"), F (AtmTrm "a") (AtmTrm "c")] , [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "c") (VarTrm (M.fromList []) [] "X")]  , [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "a") (AtmTrm "a")]  , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"),  F (AtmTrm "a") (AtmTrm "a")] , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"), F (AtmTrm "c") (VarTrm (M.fromList []) [] "X")] , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "b") (VarTrm (M.fromList []) [] "X"),  F (AtmTrm "a") (AtmTrm "a")] , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "b") (VarTrm (M.fromList []) [] "X"),  F (AtmTrm "a") (VarTrm (M.fromList []) [] "X")] ] )
+          psi (AtmTrm "a") (VarTrm (M.fromList [("c", AtmTrm "a"),("b", (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"))] ) [("a","b")] "X") [] (S.fromList ["a","c","b"])
+          `shouldBe` ( S.fromList [
+                          [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"),  F (AtmTrm "a") (AtmTrm "a")]
+                          , [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"), F (AtmTrm "a") (AtmTrm "c")]
+                          , [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "c") (VarTrm (M.fromList []) [] "X")]
+                          , [F (AtmTrm "a") (AtmTrm "a") , F (AtmTrm "a") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "a") (AtmTrm "a")]
+                          , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"),  F (AtmTrm "a") (AtmTrm "a")]
+                          , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "a") (VarTrm (M.fromList [("a", AtmTrm "b")]) [("a","c")] "Y"), F (AtmTrm "c") (VarTrm (M.fromList []) [] "X")]
+                          , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "b") (VarTrm (M.fromList []) [] "X"),  F (AtmTrm "a") (AtmTrm "a")]
+                          , [F (AtmTrm "b") (VarTrm (M.fromList []) [] "X") , F (AtmTrm "b") (VarTrm (M.fromList []) [] "X"),  F (AtmTrm "a") (VarTrm (M.fromList []) [] "X")]
+                          ])

@@ -18,7 +18,7 @@ import Control.Arrow
 aSbComp::CtxD -> Asb -> Asb -> (CtxD,  Asb)
 aSbComp fc sb1 sb2 =
   let (fc', sb1')  = M.mapAccum (\acc v -> aSbApp acc sb2 v) fc sb1
-  in (fc', sb1' `M.union`  sb2) --union left-biased so it works
+  in (fc', aSbFiltr $ sb1' `M.union`  sb2) --union left-biased so it works
        
 
 {-| Given an  atom 'a' and atom substitution \phi, it returns a-substitution \phi' where
@@ -38,9 +38,11 @@ aSbApp fc asb' (VarTrm asb p x)
   = let (fc',asb1) = aSbComp fc asb asb'
     in  (fc', aVarTrm asb1 p x)
 aSbApp fc sb abs@(AbsTrm a t)
-  =  (fc', AbsTrm nwAtm trm)
-     where (nwAtm, fc') = freshen fc (varsTrm t)
+  =  (fc'', AbsTrm nwAtm trm')
+     where (nwAtm, fc') = freshen fc (varsTrm t `S.union` varsAsb sb)--returns a new atm and a frsh context for vars in term and atm subs
+           sb' = aSbDel nwAtm sb --discard mapping with new atom if existing
            trm = prmTrmApp [(nwAtm, a)] t
+           (fc'', trm') = aSbApp fc' sb' trm
 aSbApp fc sb (AppTrm f t) = let (fc', trm) =  aSbApp fc sb t
                             in (fc', anAppTrm f trm)
 aSbApp fc sb (TplTrm ts) = (fc', aTplTrm ts')
