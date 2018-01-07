@@ -21,6 +21,8 @@ module TrmX
         , aTrmCtx
         , aFC
         , showCtx
+        , showCtxs
+        , showVSub
          ) where 
 
 ----------------PREAMBLE
@@ -110,7 +112,10 @@ showCtx:: Ctx -> String
 showCtx ctx =
   if S.null ctx
      then "{}"
-           else "{" ++ L.intercalate ", " (map (\(a,v) ->  a ++ "#" ++ v) (S.toList ctx)) ++ "}"
+           else "{" ++ L.intercalate "," (map (\(a,v) ->  a ++ "#" ++ v) (S.toList ctx)) ++ "}"
+
+showCtxs :: Ctxs -> String
+showCtxs ctxs = "{" ++ L.intercalate ", " (map showCtx $ S.toList ctxs) ++ "}"
 
 --printing a nominal term
 showTrm :: Trm -> String
@@ -128,7 +133,9 @@ showAsb  =  M.foldrWithKey (\k t acc -> acc ++ f k t) ""
 
 --prints a set of variable mappings
 showVSub:: VSub -> String
-showVSub  = M.foldrWithKey (\k t acc -> acc ++ f k t) ""
+showVSub vsub = if M.null vsub
+                  then "Id"
+                    else M.foldrWithKey (\k t acc -> acc ++ f k t) "" vsub
    where f k t = "[" ++  k ++ " -> " ++ showTrm t ++ "]"
 
 --prints a term-in-context
@@ -145,4 +152,4 @@ showRule (fc,l,r) = showCtx fc ++ " |- " ++ showTrm l ++ " --> " ++ showTrm r
 
 --prints a sequence of nominal reduction steps
 showSteps :: Ctx -> [Trm] -> String
-showSteps fc ts = showCtx fc ++ " |- " ++ L.intercalate "-->" (map showTrm ts) ++ "." 
+showSteps fc ts = showCtx fc ++ " |- " ++ L.intercalate " --> " (map showTrm ts) ++ "." 

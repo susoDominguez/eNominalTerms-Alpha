@@ -3,21 +3,14 @@ module Query where
 import qualified Data.Map as M
 import qualified Data.Set as S
 
-import Alpha
-import Rewriting
-import Trm
+import AlphaX
+import TrmX
 
 -------------------------------------------------------------------------------
 -- DATA STRUCTURES
 
 -- constraint problem
 type AQ = (Equ, Maybe Ctx, CPrb)
-
--- closedness
-type CQ = (Maybe Ctx, [Trm])
-
--- rewriting
-type RQ = ([Rule], Ctx, Trm)
 
 -------------------------------------------------------------------------------
 
@@ -28,7 +21,7 @@ fn (sb, fc)
     | S.null fc = ", if " ++ showVSub sb
     | otherwise = ", if " ++ showVSub sb ++ " and " ++ showCtx fc
 
-runAlpha:: AlphaQ -> String
+runAQ:: AlphaQ -> String
 runAQ (eq, mfc, cp)
     = case (solveCPrb eq cp, mfc) of
           (Nothing, _) -> "False"

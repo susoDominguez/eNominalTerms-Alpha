@@ -11,39 +11,39 @@ import qualified Data.Set as S
 --import qualified Control.Applicative as A
 
 --Data Structure
-data   ConstrX a   = Eq  {getL::a, getR::a} | F {getL::a, getR::a}
+data   ConstrX a   = E  {getL::a, getR::a} | F {getL::a, getR::a}
 
 anEConstr :: Trm -> Trm  -> ConstrX Trm
-anEConstr  = Eq 
+anEConstr  = E 
 
 aFConstr :: Trm -> Trm -> ConstrX Trm
 aFConstr  = F
 
-isEqConstr:: ConstrX Trm -> Bool
-isEqConstr (Eq _ _) = True
-isEqConstr _ = False
+isEConstr:: ConstrX Trm -> Bool
+isEConstr (E _ _) = True
+isEConstr _ = False
 
 instance Ord a => Ord (ConstrX a) where
-   (Eq s t) `compare` (Eq s' t') =  let result = (s `compare` s')
+   (E s t) `compare` (E s' t') =  let result = (s `compare` s')
                                     in if (result == EQ) then (t `compare` t') else result
    (F  a s) `compare` (F  a' s') =  let result = (a `compare` a')
                                     in if (result == EQ) then (s `compare` s') else result
-   (Eq _ _) `compare` (F _ _) = LT
-   (F _ _) `compare` (Eq _ _) = GT
+   (E _ _) `compare` (F _ _) = GT
+   (F _ _) `compare` (E _ _) = LT
 
 instance Eq a => Eq (ConstrX a) where
-   (Eq s t) == (Eq s' t') =  (s==s') && (t==t')
+   (E s t) == (E s' t') =  (s==s') && (t==t')
    (F  a s) == (F  a' s') =  (a==a') && (s==s')
-   (Eq _ _) == (F _ _) = False
-   (F _ _) == (Eq _ _) = False
-   (Eq s t) /= (Eq s' t') =  not $ (Eq s t) == (Eq s' t')
+   (E _ _) == (F _ _) = False
+   (F _ _) == (E _ _) = False
+   (E s t) /= (E s' t') =  not $ (E s t) == (E s' t')
    (F  a s) /= (F  a' s') =  not $ (F  a s) == (F  a' s')
-   (Eq _ _) /= (F _ _)    =  True
-   (F _ _) /= (Eq _ _)    =  True
+   (E _ _) /= (F _ _)    =  True
+   (F _ _) /= (E _ _)    =  True
 
 instance Show a => Show (ConstrX a) where
-   show (Eq s t) = show s ++ " = " ++ show t
-   show (F a t) = show a ++ " # " ++ show t 
+   show (E s t) = show s ++ "=" ++ show t
+   show (F a t) = show a ++ "#" ++ show t 
 
 --A list of Constraints
 type Prob = [ConstrX Trm]
@@ -72,12 +72,19 @@ varsProb (c:prob)  = varsConstr c `S.union`  varsProb prob
 varsRHSProb :: Prob -> Set Var
 varsRHSProb []        = S.empty
 varsRHSProb (c:prob)  = (varsTrm $ getR c) `S.union`  varsProb prob
-    
---solution  to a matching problem
-type Sol  = (Ctxs, VSub)
-type Sols = Set Sol
 
 -- Convert freshness context into list of freshness constraints
 ctx2Constr :: Ctx -> Prob
 ctx2Constr = map (\(a,t)-> (aFConstr (anAtmTrm a) (aVarTrm M.empty [] t))) . S.toList
 
+
+--solution  to a matching problem
+type Sol  = (Ctxs, VSub)
+type Sols = Set Sol
+
+--pretty printing
+
+showSol :: Sol -> String
+showSol (ctxs, vsub) = "(" ++ showCtxs ctxs ++ ", " ++ showVSub vsub ++ ")"
+
+showSols sols = "[" ++ L.intercalate ", " (map showSol $ S.toList sols) ++ "]"

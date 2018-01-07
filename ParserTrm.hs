@@ -130,6 +130,7 @@ parseProbCtx = do   ctx <- try (parseCtx) <|> (return S.empty)
                     spaces
                     prob <- parseProb
                     return (ctx,prob) <?> "ctx and problems"
+                    
 inputL :: Parser a -> String -> Either PErr a
 inputL p s = case parse p ""  s of
                  Left e -> Left (show e)
@@ -153,6 +154,8 @@ parseRule = do fc <- try parseCtx <|> (return S.empty)
                l <- parseTrm
                spaces
                string "-->"
+
+
                spaces
                r <- parseTrm
                return (fc, l, r) <?> "rule"

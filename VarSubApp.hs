@@ -52,7 +52,7 @@ atmActionsTrm fc asb p = aSbApp fc asb . prmTrmApp p
 --vsubApp for ConstrX data structure. Adapted for matching, so only applies to RHS term
 vsubCnApp:: CtxD -> VSub -> ConstrX Trm -> (CtxD, ConstrX Trm)
 vsubCnApp fc vsb c
-     | isEqConstr c = (fc' $ getL c, Eq (trm $ getL c) (getR c))
+     | isEConstr c = (fc' $ getL c, E (trm $ getL c) (getR c))
      | otherwise = (fc' $ getR c, F (getL c) (trm $ getR c))
      where fn = vsubApp fc vsb
            trm = (snd . fn)

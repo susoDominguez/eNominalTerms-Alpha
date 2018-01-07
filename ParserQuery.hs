@@ -10,14 +10,20 @@ import Rewriting
 import Trm
 
 -------------------------------------------------------------------------------
+--parses a String with a given Parser; returns an error or the value of the parserp
+inputL :: Parser a -> String -> Either PErr a
+inputL p s = case parse p "" (whiteSpace >> s) of
+                 Left e -> Left (show e)
+                 Right x -> Right x
+
 
 --parses a context and a list of constraints
-parseAlphaQ :: Parser AlphaQ
+{-parseAlphaQ :: Parser AlphaQ
 parseAlphaQ = do fc <- parseCtx <|> return S.empty
                  spaces >>= string "|-"
                  prob <- parseProb
                  return (fc, prob)
-
+-}
 {-
 parseCQ :: Parser CQ
 parseCQ = do fc <- parseMFC "!"
